@@ -1,6 +1,24 @@
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyDTb-zl5arjf9lQufXwbDLV-_MbHA9Q9mE",
+    authDomain: "manresa-vasagar-vattam.firebaseapp.com",
+    projectId: "manresa-vasagar-vattam",
+    storageBucket: "manresa-vasagar-vattam.firebasestorage.app",
+    messagingSenderId: "591682449265",
+    appId: "1:591682449265:web:1fa01a2dc5a374d24b90d0",
+    measurementId: "G-DNSM3VEG43"
+  });
+
+  const firebaseAuth = firebase.auth();
+  const firebaseDb = firebase.firestore();
+</script>
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>MANRESA VASAGAR VATTAM – BOOK MANAGEMENT SYSTEM</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+  
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
@@ -220,40 +238,104 @@ function counts(list){var c={Borrowed:0,Returned:0,Overdue:0};list.forEach(funct
 function sortRecs(list){return list.slice().sort(function(a,b){return (b.borrowDate+b.id).localeCompare(a.borrowDate+a.id)})}
 
 /* ---------- storage ---------- */
-var Store={db:null,
-  init:async function(){
-    var db=null,user=null;
-    try{db=(window.claude&&window.claude.use)?await window.claude.use("db"):null}catch(e){db=null}
-    try{user=(window.claude&&window.claude.use)?await window.claude.use("user"):null}catch(e){user=null}
-    if(user&&user.canEdit){try{S.admin=!!user.canEdit()}catch(e){}}
-    if(db){
-      this.db=db;S.mode="cloud";
-      var loaded={members:false,records:false};
-      ["members","records"].forEach(function(kind){
-        db.collection(kind).onSnapshot(function(snap){
-          S[kind]=snap.docs.map(function(d){return d.data()});
-          loaded[kind]=true;if(loaded.members&&loaded.records)S.ready=true;render();
-        },function(err){S.ready=true;render();toast("Could not read the records ("+((err&&err.code)||"error")+"). Please reload the page.","bad")});
+/* ---------- Firebase storage ---------- */
+var Store = {
+  db: firebaseDb,
+  auth: firebaseAuth,
+  listeners: [],
+
+  init: async function () {
+    var self = this;
+
+    this.auth.onAuthStateChanged(async function (user) {
+      self.listeners.forEach(function (unsubscribe) {
+        unsubscribe();
       });
-    }else{S.mode="local";this.loadLocal();S.ready=true;render()}
+      self.listeners = [];
+
+      S.members = [];
+      S.records = [];
+      S.ready = false;
+      S.admin = !!(user && user.uid ===
+        "zmGOGaPsywPBINNAb7hwEPn8h6y2");
+
+      if (!S.admin) {
+        S.mode = "local";
+        S.ready = true;
+        render();
+        return;
+      }
+
+      S.mode = "cloud";
+      render();
+
+      var loaded = { members: false, records: false };
+
+      ["members", "records"].forEach(function (kind) {
+        var unsubscribe = self.db.collection(kind)
+          .onSnapshot(function (snapshot) {
+            S[kind] = snapshot.docs.map(function (doc) {
+              return doc.data();
+            });
+
+            loaded[kind] = true;
+            S.ready = loaded.members && loaded.records;
+            render();
+          }, function (error) {
+            console.error("Firestore error:", error);
+            S.ready = true;
+            render();
+            toast(
+              "Could not load records. Check Firebase settings and security rules.",
+              "bad"
+            );
+          });
+
+        self.listeners.push(unsubscribe);
+      });
+    });
   },
-  loadLocal:function(){try{var raw=localStorage.getItem("mvv.v1");if(raw){var o=JSON.parse(raw);S.members=o.members||[];S.records=o.records||[]}}catch(e){S.mode="memory"}},
-  saveLocal:function(){try{localStorage.setItem("mvv.v1",JSON.stringify({members:S.members,records:S.records}))}catch(e){S.mode="memory";throw new Error("This browser is blocking storage, so records will be lost when the page closes.")}},
-  put:async function(kind,obj){
-    var arr=S[kind],i=arr.findIndex(function(x){return x.id===obj.id});if(i>=0)arr[i]=obj;else arr.push(obj);render();
-    try{if(this.db)await this.db.collection(kind).doc(obj.id).set(obj);else this.saveLocal();return true}catch(e){this.failed(e);return false}
+
+  put: async function (kind, obj) {
+    if (!S.admin || !["members", "records"].includes(kind)) {
+      toast("Administrator login required.", "bad");
+      return false;
+    }
+
+    try {
+      await this.db.collection(kind).doc(obj.id).set(obj);
+      return true;
+    } catch (error) {
+      console.error(error);
+      toast("Could not save. Check Firebase permissions.", "bad");
+      return false;
+    }
   },
-  del:async function(kind,id){
-    S[kind]=S[kind].filter(function(x){return x.id!==id});render();
-    try{if(this.db)await this.db.collection(kind).doc(id).delete();else this.saveLocal();return true}catch(e){this.failed(e);return false}
+
+  del: async function (kind, id) {
+    if (!S.admin || !["members", "records"].includes(kind)) {
+      toast("Administrator login required.", "bad");
+      return false;
+    }
+
+    try {
+      await this.db.collection(kind).doc(id).delete();
+      return true;
+    } catch (error) {
+      console.error(error);
+      toast("Could not delete. Check Firebase permissions.", "bad");
+      return false;
+    }
   },
-  failed:async function(e){
-    var c=e&&e.code;
-    toast(c==="invalid_argument"?"Only an administrator can change records. Your change was not saved.":c==="quota_exceeded"?"The storage is full. Delete old records first.":(e&&e.message)||"Could not save. Please try again.","bad");
-    if(this.db){try{var a=await this.db.collection("members").get(),b=await this.db.collection("records").get();S.members=a.docs.map(function(d){return d.data()});S.records=b.docs.map(function(d){return d.data()});render()}catch(_){}}
+
+  signIn: async function (email, password) {
+    return this.auth.signInWithEmailAndPassword(email, password);
+  },
+
+  signOut: async function () {
+    await this.auth.signOut();
   }
 };
-
 /* ---------- toasts, modals ---------- */
 function toast(msg,kind){var t=document.createElement("div");t.className="toast"+(kind==="bad"?" bad":"");t.textContent=msg;$("#toasts").appendChild(t);setTimeout(function(){t.remove()},kind==="bad"?6500:3500)}
 var lastFocus=null;
@@ -496,7 +578,51 @@ function render(){
   var n=$("#notice");
   n.innerHTML=(S.mode==="local"||S.mode==="memory")?'<div class="gut"><div class="strip"><b>Records are saved in this browser only.</b> They are not shared between devices and are lost if the browser data is cleared. Download a backup from Reports and Backup often.</div></div>':"";
   if(!S.ready){app.innerHTML='<div class="empty">Loading records…</div>';return}
-  if(!S.admin){app.innerHTML='<div class="card empty"><h3>Administrator access needed</h3><p>Only administrators can view and manage the records. Please ask the church administrator to share this page with you as an <b>Editor</b>.</p></div>';return}
+  if (!S.admin) {
+  app.innerHTML =
+    '<div class="card empty">' +
+      '<h3>Manresa Vasagar Vattam</h3>' +
+      '<p>Administrator Login</p>' +
+      '<form id="firebaseLoginForm" class="form">' +
+        '<div class="field">' +
+          '<label for="loginEmail">Email Address</label>' +
+          '<input id="loginEmail" type="email" required autocomplete="username" placeholder="Enter admin email">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="loginPassword">Password</label>' +
+          '<input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Enter password">' +
+        '</div>' +
+        '<p id="loginError" role="alert" class="err"></p>' +
+        '<button class="btn primary" type="submit">Sign In</button>' +
+      '</form>' +
+    '</div>';
+
+  var loginForm = document.getElementById("firebaseLoginForm");
+
+  loginForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    var email = document.getElementById("loginEmail").value.trim();
+    var password = document.getElementById("loginPassword").value;
+    var errorBox = document.getElementById("loginError");
+    var button = loginForm.querySelector("button[type=submit]");
+
+    button.disabled = true;
+    errorBox.textContent = "";
+
+    try {
+      await Store.signIn(email, password);
+    } catch (error) {
+      errorBox.textContent =
+        error.code === "auth/invalid-credential"
+          ? "Email or password is incorrect."
+          : "Login failed. Please check your details and try again.";
+      button.disabled = false;
+    }
+  });
+
+  return;
+}
   var formView=(S.view==="register"||S.view==="add");
   if(formView&&app.getAttribute("data-v")===S.view&&!S._force){return}
   S._force=false;app.setAttribute("data-v",S.view);
@@ -539,5 +665,6 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&modalEl.fir
 render();Store.init();
 })();
 </script>
+
 
 </body></html>
