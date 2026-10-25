@@ -259,12 +259,12 @@ var Store = {
       S.admin = !!(user && user.uid ===
         "jjwtzHfv3ne3MBHdNwRWdS6eS0x1");
 
-      if (!S.admin) {
-        S.mode = "local";
-        S.ready = true;
-        render();
-        return;
-      }
+      if (!user) {
+  S.mode = "pending";
+  S.ready = true;
+  render();
+  return;
+}
 
       S.mode = "cloud";
       render();
