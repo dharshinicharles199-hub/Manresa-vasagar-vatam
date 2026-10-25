@@ -487,7 +487,13 @@ function vRegister(){return head("Register Members","Add each member once. Their
 function vMembers(){
   var q=S.mq.trim().toLowerCase(),qd=digits(S.mq);
   var list=S.members.filter(function(m){return !q||has(m.name,q)||has(m.id,q)||(qd&&digits(m.phone).indexOf(qd)>-1)}).sort(function(a,b){return a.name.localeCompare(b.name)});
-  return head("Members List","Search by name or phone number. Edit or delete a member here.",'<button class="btn primary" data-act="nav" data-v="register">'+ic("plus")+'Register New Member</button>')+
+  return head(
+  "Members List",
+  "Search by name or phone number.",
+  S.admin
+    ? '<button class="btn primary" data-act="nav" data-v="register">'+ic("plus")+'Register New Member</button>'
+    : ''
+)+
    searchBox("mq","mq",S.mq,"Type a name or phone number")+(S.members.length?'<p class="muted">'+list.length+' of '+S.members.length+' members</p>'+membersTable(list):'<div class="card empty"><h3>No members yet</h3><p>Use Register Members to add the first one.</p></div>');
 }
 function vAdd(){
