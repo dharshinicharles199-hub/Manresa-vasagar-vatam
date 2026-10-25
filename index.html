@@ -452,16 +452,32 @@ function delRecord(id){
 
 /* ---------- tables ---------- */
 function badge(r){var s=status(r),t=s;if(s==="Overdue")t="OVERDUE · "+daysLate(r.expectedReturn)+" day"+(daysLate(r.expectedReturn)===1?"":"s");return '<span class="badge b-'+s.toLowerCase()+'">'+t+'</span>'}
+
 function recTable(list,o){
-  o=o||{};if(!list.length)return '<div class="card empty small">No records found.</div>';
-  return '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+(o.noMember?'':'<th>Member</th><th>Phone</th>')+'<th>Book Name</th><th>Borrowed</th><th>Expected Return</th><th>Actual Return</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>'+
-   list.map(function(r){var m=member(r.memberId)||{name:"(deleted member)",phone:""},late=status(r)==="Overdue";
-    var act=!S.admin?'':(o.returnOnly?'<button class="btn sm primary" data-act="returnBook" data-id="'+esc(r.id)+'">'+ic("undo")+'Return Book</button>':
-      (r.actualReturn?'':'<button class="btn sm primary" data-act="returnBook" data-id="'+esc(r.id)+'">'+ic("undo")+'Return</button>')+
-      '<button class="btn sm icon" data-act="editBook" data-id="'+esc(r.id)+'" title="Edit or correct" aria-label="Edit record">'+ic("edit")+'</button><button class="btn sm icon del" data-act="delBook" data-id="'+esc(r.id)+'" title="Delete" aria-label="Delete record">'+ic("trash")+'</button>';
-    return '<tr class="'+(late?"late":"")+'">'+(o.noMember?'':'<td><button class="link" data-act="history" data-id="'+esc(r.memberId)+'">'+esc(m.name)+'</button></td><td class="mono">'+esc(m.phone)+'</td>')+
-     '<td><b>'+esc(r.book)+'</b></td><td class="date">'+fmt(r.borrowDate)+'</td><td class="date">'+(fmt(r.expectedReturn)||'<span class="muted">Not set</span>')+'</td><td class="date">'+(r.actualReturn?fmt(r.actualReturn):'<span class="muted">(Empty)</span>')+'</td><td>'+badge(r)+'</td><td class="act"><div class="row">'+act+'</div></td></tr>'}).join('')+'</tbody></table></div>';
+  o=o||{};
+  if(!list.length)return '<div class="card empty small">No records found.</div>';
+
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+
+   (o.noMember?'':'<th>Member</th><th>Phone</th>')+
+   '<th>Book Name</th><th>Borrowed</th><th>Expected Return</th><th>Actual Return</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>'+
+   list.map(function(r){
+    var m=member(r.memberId)||{name:"(deleted member)",phone:""},
+        late=status(r)==="Overdue";
+
+    var act=!S.admin?'':(
+      o.returnOnly
+      ? '<button class="btn sm primary" data-act="returnBook" data-id="'+esc(r.id)+'">'+ic("undo")+'Return Book</button>'
+      : (r.actualReturn?'':'<button class="btn sm primary" data-act="returnBook" data-id="'+esc(r.id)+'">'+ic("undo")+'Return</button>')+
+        '<button class="btn sm icon" data-act="editBook" data-id="'+esc(r.id)+'" title="Edit or correct" aria-label="Edit record">'+ic("edit")+'</button>'+
+        '<button class="btn sm icon del" data-act="delBook" data-id="'+esc(r.id)+'" title="Delete" aria-label="Delete record">'+ic("trash")+'</button>'
+    );
+
+    return '<tr class="'+(late?"late":"")+'">'+
+     (o.noMember?'':'<td><button class="link" data-act="history" data-id="'+esc(r.memberId)+'">'+esc(m.name)+'</button></td><td class="mono">'+esc(m.phone)+'</td>')+
+     '<td><b>'+esc(r.book)+'</b></td><td class="date">'+fmt(r.borrowDate)+'</td><td class="date">'+(fmt(r.expectedReturn)||'<span class="muted">Not set</span>')+'</td><td class="date">'+(r.actualReturn?fmt(r.actualReturn):'<span class="muted">(Empty)</span>')+'</td><td>'+badge(r)+'</td><td class="act"><div class="row">'+act+'</div></td></tr>';
+   }).join('')+'</tbody></table></div>';
 }
+
 function membersTable(list){
   if(!list.length)return '<div class="card empty small">No members found.</div>';
   return '<div class="tbl-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>Member ID</th><th>Member Name</th><th>Phone Number</th><th>Books</th><th class="r">Actions</th></tr></thead><tbody>'+
