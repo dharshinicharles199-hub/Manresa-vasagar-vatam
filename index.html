@@ -578,7 +578,7 @@ function render(){
   var n=$("#notice");
   n.innerHTML=(S.mode==="local"||S.mode==="memory")?'<div class="gut"><div class="strip"><b>Records are saved in this browser only.</b> They are not shared between devices and are lost if the browser data is cleared. Download a backup from Reports and Backup often.</div></div>':"";
   if(!S.ready){app.innerHTML='<div class="empty">Loading records…</div>';return}
-  if (!S.admin) {
+  if (!firebaseAuth.currentUser) {
   app.innerHTML =
     '<div class="card empty">' +
       '<h3>Manresa Vasagar Vattam</h3>' +
