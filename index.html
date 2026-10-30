@@ -392,7 +392,7 @@ function bindMemberForm(m,p,done){
 }
 
 
-function recordForm(r,p,presetMember){
+function memberOptions(sel){
   return '<option value="">Select a member</option>'+
   S.members.slice().sort(function(a,b){
     return a.name.localeCompare(b.name);
@@ -402,8 +402,6 @@ function recordForm(r,p,presetMember){
     esc(m.name)+'</option>';
   }).join("");
 }
-
-
 function recordForm(r,p,presetMember){
   var v=r||{memberId:presetMember||"",book:"",borrowDate:today(),expectedReturn:"",actualReturn:"",status:"Borrowed"};
   return '<form class="form" id="'+p+'form" novalidate><div class="form-alert" role="alert"></div>'+
