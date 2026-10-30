@@ -410,7 +410,7 @@ function recordForm(r,p,presetMember){
    fld(p+"mem","Member Name *",'<select id="'+p+'mem">'+memberOptions(v.memberId)+'</select>')+
    fld(p+"book","Book Name *",'<input id="'+p+'book" maxlength="150" autocomplete="off" value="'+esc(v.book)+'" placeholder="e.g. Ramayana">')+
    '<div class="grid2">'+fld(p+"bd","Date of Borrowing *",'<input id="'+p+'bd" type="date" value="'+esc(v.borrowDate)+'">')+
-   fld(p+"ed","Expected Return Date",'<input id="'+p+"ed" type="date" value="'+esc(v.expectedReturn)+'">','Optional')+'</div>'+
+   fld(p+"ed","Expected Return Date",'<input id="'+p+'ed" type="date" value="'+esc(v.expectedReturn)+'">','Optional')+'</div>'+
    '<div class="grid2">'+fld(p+"ad","Actual Return Date",'<input id="'+p+"ad" type="date" value="'+esc(v.actualReturn)+'">','Leave EMPTY until the book is really returned')+
    fld(p+"st","Book Status",'<select id="'+p+"st"><option>Borrowed</option><option>Returned</option></select>')+'</div>'+
    '<div class="row"><button class="btn primary" type="submit">'+ic("check")+(r?"Save Changes":"Save Borrowing Record")+'</button>'+(r?'<button class="btn" type="button" data-act="closeModal">Cancel</button>':'')+'</div></form>';
