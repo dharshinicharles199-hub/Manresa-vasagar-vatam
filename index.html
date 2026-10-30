@@ -356,51 +356,69 @@ function showErrors(root,map){
 }
 
 /* ---------- forms ---------- */
+
 function memberForm(m,prefix){
-  var p=prefix;var v=m||{name:"",phone:""};
+  var p=prefix;
+  var v=m||{name:""};
   return '<form class="form" id="'+p+'form" novalidate><div class="form-alert" role="alert"></div>'+
    fld(p+"id","Member ID",'<input id="'+p+'id" readonly value="'+esc(m?m.id:nextId("members"))+'">','Made automatically')+
    fld(p+"name","Member Name *",'<input id="'+p+'name" maxlength="80" autocomplete="off" value="'+esc(v.name)+'" placeholder="Full name">')+
-   fld(p+"phone","Phone Number *",'<input id="'+p+'phone" type="tel" inputmode="tel" maxlength="20" autocomplete="off" value="'+esc(v.phone)+'" placeholder="e.g. 9876543210">')+
    '<div class="row"><button class="btn primary" type="submit">'+ic("check")+(m?"Save Changes":"Register Member")+'</button>'+(m?'<button class="btn" type="button" data-act="closeModal">Cancel</button>':'')+'</div></form>';
 }
+
+
 function bindMemberForm(m,p,done){
   var form=$("#"+p+"form");
   form.addEventListener("submit",async function(ev){
     ev.preventDefault();
-    var name=$("#"+p+"name").value.trim().replace(/\s+/g," "),phone=$("#"+p+"phone").value.trim(),errs={};
+    var name=$("#"+p+"name").value.trim().replace(/\s+/g," "),errs={};
+
     if(name.length<2)errs[p+"name"]="Please type the member's name.";
-    if(!phone)errs[p+"phone"]="Please type the phone number.";
-    else if(!/^[0-9+()\-\s]+$/.test(phone)||digits(phone).length<7||digits(phone).length>15)errs[p+"phone"]="Use 7 to 15 digits. Spaces, + and - are allowed.";
-    else{var dup=S.members.find(function(x){return digits(x.phone)===digits(phone)&&(!m||x.id!==m.id)});if(dup)errs[p+"phone"]="This number is already used by "+dup.name+" ("+dup.id+").";}
+
     if(!showErrors(form,errs))return;
-    var obj={id:m?m.id:nextId("members"),name:name,phone:phone,createdAt:m?m.createdAt:new Date().toISOString()};
+
+    var obj={
+      id:m?m.id:nextId("members"),
+      name:name,
+      createdAt:m?m.createdAt:new Date().toISOString()
+    };
+
     form.querySelectorAll("button").forEach(function(b){b.disabled=true});
     var ok=await Store.put("members",obj);
+
     if(ok)toast(m?"Member updated.":name+" is registered.");
     done(ok,obj);
   });
 }
-function memberOptions(sel){
-  return '<option value="">Select a member</option>'+S.members.slice().sort(function(a,b){return a.name.localeCompare(b.name)}).map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===sel?" selected":"")+'>'+esc(m.name)+' – '+esc(m.phone)+'</option>'}).join("");
+
+
+function recordForm(r,p,presetMember){
+  return '<option value="">Select a member</option>'+
+  S.members.slice().sort(function(a,b){
+    return a.name.localeCompare(b.name);
+  }).map(function(m){
+    return '<option value="'+esc(m.id)+'"'+
+    (m.id===sel?" selected":"")+'>'+
+    esc(m.name)+'</option>';
+  }).join("");
 }
+
+
 function recordForm(r,p,presetMember){
   var v=r||{memberId:presetMember||"",book:"",borrowDate:today(),expectedReturn:"",actualReturn:"",status:"Borrowed"};
   return '<form class="form" id="'+p+'form" novalidate><div class="form-alert" role="alert"></div>'+
    fld(p+"mem","Member Name *",'<select id="'+p+'mem">'+memberOptions(v.memberId)+'</select>')+
-   fld(p+"phone","Member Phone Number",'<input id="'+p+'phone" readonly placeholder="Shown after you choose a member">','Taken from the member\'s details')+
    fld(p+"book","Book Name *",'<input id="'+p+'book" maxlength="150" autocomplete="off" value="'+esc(v.book)+'" placeholder="e.g. Ramayana">')+
    '<div class="grid2">'+fld(p+"bd","Date of Borrowing *",'<input id="'+p+'bd" type="date" value="'+esc(v.borrowDate)+'">')+
-   fld(p+"ed","Expected Return Date",'<input id="'+p+'ed" type="date" value="'+esc(v.expectedReturn)+'">','Optional')+'</div>'+
-   '<div class="grid2">'+fld(p+"ad","Actual Return Date",'<input id="'+p+'ad" type="date" value="'+esc(v.actualReturn)+'">','Leave EMPTY until the book is really returned')+
-   fld(p+"st","Book Status",'<select id="'+p+'st"><option>Borrowed</option><option>Returned</option></select>')+'</div>'+
+   fld(p+"ed","Expected Return Date",'<input id="'+p+"ed" type="date" value="'+esc(v.expectedReturn)+'">','Optional')+'</div>'+
+   '<div class="grid2">'+fld(p+"ad","Actual Return Date",'<input id="'+p+"ad" type="date" value="'+esc(v.actualReturn)+'">','Leave EMPTY until the book is really returned')+
+   fld(p+"st","Book Status",'<select id="'+p+"st"><option>Borrowed</option><option>Returned</option></select>')+'</div>'+
    '<div class="row"><button class="btn primary" type="submit">'+ic("check")+(r?"Save Changes":"Save Borrowing Record")+'</button>'+(r?'<button class="btn" type="button" data-act="closeModal">Cancel</button>':'')+'</div></form>';
 }
+
 function bindRecordForm(r,p,done){
-  var form=$("#"+p+"form"),mem=$("#"+p+"mem"),ph=$("#"+p+"phone"),ad=$("#"+p+"ad"),st=$("#"+p+"st");
+  var form=$("#"+p+"form"),mem=$("#"+p+"mem"),ad=$("#"+p+"ad"),st=$("#"+p+"st");
   st.value=(r&&(r.actualReturn||r.status==="Returned"))?"Returned":"Borrowed";
-  function showPhone(){var m=member(mem.value);ph.value=m?m.phone:""}
-  mem.addEventListener("input",showPhone);showPhone();
   ad.addEventListener("input",function(){st.value=ad.value?"Returned":"Borrowed"});
   st.addEventListener("input",function(){if(st.value==="Borrowed"&&ad.value)ad.value=""});
   form.addEventListener("submit",async function(ev){
@@ -426,9 +444,9 @@ function bindRecordForm(r,p,done){
 function openMemberEdit(id){var m=member(id);if(!m)return;openModal(dlgHead("Edit Member")+'<div class="dlg-body">'+memberForm(m,"em-")+'</div>',true);bindMemberForm(m,"em-",function(){closeModal()})}
 function openRecordEdit(id){var r=rec(id);if(!r)return;openModal(dlgHead("Edit Borrowing Record")+'<div class="dlg-body">'+recordForm(r,"er-")+'</div>');bindRecordForm(r,"er-",function(){closeModal()})}
 function openReturn(id){
-  var r=rec(id);if(!r)return;var m=member(r.memberId)||{name:"Unknown",phone:""};
+  var r=rec(id);if(!r)return;var m=member(r.memberId)||{name:"Unknown"};
   openModal(dlgHead("Return Book")+'<form id="retform" novalidate><div class="dlg-body"><div class="form-alert" role="alert"></div>'+
-   '<div class="info"><b>'+esc(r.book)+'</b><br>'+esc(m.name)+' · '+esc(m.phone)+'<br>Borrowed '+fmt(r.borrowDate)+(r.expectedReturn?' · Expected back '+fmt(r.expectedReturn):'')+'</div>'+
+   '<div class="info"><b>'+esc(r.book)+'</b><br>'+esc(m.name)+'<br>Borrowed '+fmt(r.borrowDate)+(r.expectedReturn?' · Expected back '+fmt(r.expectedReturn):'')+'</div>'+
    fld("ret-date","Actual Return Date *",'<input id="ret-date" type="date" value="">','Type the date the book was really returned.')+
    '</div><div class="dlg-foot"><button class="btn" type="button" data-act="closeModal">Cancel</button><button class="btn primary" type="submit">'+ic("check")+'Mark as Returned</button></div></form>',true);
   var form=$("#retform");
@@ -458,10 +476,10 @@ function recTable(list,o){
   if(!list.length)return '<div class="card empty small">No records found.</div>';
 
   return '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+
-   (o.noMember?'':'<th>Member</th><th>Phone</th>')+
+   (o.noMember?'':'<th>Member</th>')+
    '<th>Book Name</th><th>Borrowed</th><th>Expected Return</th><th>Actual Return</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>'+
    list.map(function(r){
-    var m=member(r.memberId)||{name:"(deleted member)",phone:""},
+    var m=member(r.memberId)||{name:"(deleted member)"},
         late=status(r)==="Overdue";
 
     var act=!S.admin?'':(
@@ -473,38 +491,12 @@ function recTable(list,o){
     );
 
     return '<tr class="'+(late?"late":"")+'">'+
-     (o.noMember?'':'<td><button class="link" data-act="history" data-id="'+esc(r.memberId)+'">'+esc(m.name)+'</button></td><td class="mono">'+esc(m.phone)+'</td>')+
+     (o.noMember?'':'<td><button class="link" data-act="history" data-id="'+esc(r.memberId)+'">'+esc(m.name)+'</button></td>')+
      '<td><b>'+esc(r.book)+'</b></td><td class="date">'+fmt(r.borrowDate)+'</td><td class="date">'+(fmt(r.expectedReturn)||'<span class="muted">Not set</span>')+'</td><td class="date">'+(r.actualReturn?fmt(r.actualReturn):'<span class="muted">(Empty)</span>')+'</td><td>'+badge(r)+'</td><td class="act"><div class="row">'+act+'</div></td></tr>';
    }).join('')+'</tbody></table></div>';
 }
 
-function membersTable(list){
-  if(!list.length)return '<div class="card empty small">No members found.</div>';
-
-  return '<div class="tbl-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>Member ID</th><th>Member Name</th><th>Phone Number</th><th>Books</th><th class="r">Actions</th></tr></thead><tbody>'+
-   list.map(function(m){
-    var rs=memberRecords(m.id);
-    var out=rs.filter(function(r){
-      return status(r)!=="Returned";
-    }).length;
-
-    var actions='<button class="btn sm" data-act="history" data-id="'+esc(m.id)+'">'+ic("eye")+'Books</button>';
-
-    if(S.admin){
-      actions+='<button class="btn sm icon" data-act="editMember" data-id="'+esc(m.id)+'" title="Edit member" aria-label="Edit '+esc(m.name)+'">'+ic("edit")+'</button>'+
-      '<button class="btn sm icon del" data-act="delMember" data-id="'+esc(m.id)+'" title="Delete member" aria-label="Delete '+esc(m.name)+'">'+ic("trash")+'</button>';
-    }
-
-    return '<tr>'+
-      '<td class="mono">'+esc(m.id)+'</td>'+
-      '<td><button class="link" data-act="history" data-id="'+esc(m.id)+'">'+esc(m.name)+'</button></td>'+
-      '<td class="mono">'+esc(m.phone)+'</td>'+
-      '<td>'+rs.length+' borrowed<div class="sub">'+out+' not returned</div></td>'+
-      '<td class="act"><div class="row">'+actions+'</div></td>'+
-      '</tr>';
-   }).join('')+
-   '</tbody></table></div>';
-}
+membersTable
 function stat(cls,label,num){return '<div class="stat '+cls+'"><span class="label">'+label+'</span><span class="num">'+num+'</span></div>'}
 function head(t,p,extra){return '<div class="page-head"><div><h2>'+t+'</h2><div class="rule"></div>'+(p?'<p>'+p+'</p>':'')+'</div>'+(extra||"")+'</div>'}
 function searchBox(id,bind,val,ph){return '<div class="card"><div class="field"><label for="'+id+'">Search</label><input id="'+id+'" data-bind="'+bind+'" type="search" autocomplete="off" placeholder="'+ph+'" value="'+esc(val)+'"></div></div>'}
@@ -574,21 +566,38 @@ function vReports(){
    '<div class="seg" role="group" aria-label="Report type">'+Object.keys(REPS).map(function(k){return '<button data-act="repTab" data-t="'+k+'" aria-pressed="'+(S.repT===k)+'">'+REPS[k].label+'</button>'}).join('')+'</div>'+
    '<div class="row" style="justify-content:space-between"><b>'+l.length+' record'+(l.length===1?"":"s")+'</b><button class="btn sm" data-act="expReport">'+ic("download")+'Download this report</button></div>'+recTable(l,{});
 }
+
 function vSettings(){
-  var cloud=S.mode==="cloud";
-  return head("Settings and Logout")+'<div class="settings">'+
-   '<div class="card"><h3>Where records are kept</h3><p>'+(cloud?'All records are saved in this page\'s private online database. They remain after you close and reopen the website, and every administrator sees the same records on any phone or computer.':S.mode==="memory"?'This browser is blocking storage. Records will be lost when the page is closed.':'Online storage is not available here, so records are kept <b>only in this browser on this device</b>. They are not shared between devices and are lost if the browser data is cleared. Please download backups often.')+'</p></div>'+
-   '<div class="card"><h3>Administrator access</h3>'+(cloud?'<p>Only people who are signed in to Claude and have been given <b>Editor</b> access to this page can see or change the records. Anyone else sees nothing.</p><ol><li>Open this page in Claude and choose <b>Share</b>.</li><li>Invite each administrator by email and set them as <b>Editor</b>.</li><li>Do not turn on a public link for viewers. Public visitors cannot read the records, but keeping the page private is safest.</li></ol>':'<p>Administrator login works when this page is opened in Claude with the online database. In this view there is no login, so anyone who can open this page can change the records.</p>')+'</div>'+
-   '<div class="card"><h3>Logout</h3><p>This website uses your Claude account to sign in, so signing out is done there. Open the account menu in Claude and choose <b>Log out</b>. On a shared computer, always do this when you finish.</p></div>'+
-   '<div class="card"><h3>Test data</h3><p>Add the example member Maria (phone 9876543210) with the book Ramayana, to try the screens. Test items are marked and can be removed in one step. Your real records are not touched.</p><div class="row"><button class="btn" data-act="sample">Add test example</button><button class="btn" data-act="clearSample">Remove test data</button></div></div></div>';
+  return head("Settings and Logout")+
+    '<div class="settings">'+
+    '<div class="card">'+
+    '<h3>Logout</h3>'+
+    '<p>Sign out of your administrator account.</p>'+
+    '<button class="btn primary" data-act="logout" type="button">Logout</button>'+
+    '</div></div>';
 }
+
 
 /* ---------- export ---------- */
 function csvCell(v){var s=String(v==null?"":v);if(/^[=+\-@]/.test(s)&&!/^\+?\d[\d\s\-()]*$/.test(s))s="'"+s;return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
 function toCSV(head,rows){return "﻿"+[head].concat(rows).map(function(r){return r.map(csvCell).join(",")}).join("\r\n")}
-function recRows(list){return list.map(function(r){var m=member(r.memberId)||{};return [r.id,m.id||r.memberId,m.name||"",m.phone||"",r.book,fmt(r.borrowDate),fmt(r.expectedReturn),fmt(r.actualReturn),status(r)]})}
-var RH=["Record ID","Member ID","Member Name","Phone Number","Book Name","Date of Borrowing","Expected Return Date","Actual Return Date","Status"];
-async function saveFile(name,data){
+
+function recRows(list){
+  return list.map(function(r){
+    var m=member(r.memberId)||{};
+    return [
+      r.id,
+      m.id||r.memberId,
+      m.name||"",
+      r.book,
+      fmt(r.borrowDate),
+      fmt(r.expectedReturn),
+      fmt(r.actualReturn),
+      status(r)
+    ];
+  });
+}
+
   var dl=null;try{dl=(window.claude&&window.claude.use)?await window.claude.use("downloads"):null}catch(e){}
   if(dl){try{await dl.save({filename:name,data:data});toast("File saved: "+name);return}catch(e){var c=e&&e.code;if(c==="declined")return;if(c==="rate_limited"){toast("Please wait a moment and try again.","bad");return}}}
   try{await navigator.clipboard.writeText(data);toast("Downloads are not available here. The data was copied to your clipboard. Paste it into a text file.")}catch(e){toast("Downloads are not available in this view.","bad")}
@@ -679,6 +688,14 @@ function go(v){S.view=v;S._force=true;render();window.scrollTo(0,0)}
 document.addEventListener("click",function(e){
   var el=e.target.closest("[data-act]");if(!el)return;
   var a=el.getAttribute("data-act"),id=el.getAttribute("data-id");
+
+if(a==="logout"){
+  Store.signOut().catch(function(error){
+    alert("Logout failed. Please try again.");
+    console.error(error);
+  });
+  return;
+}
   if(a==="overlay"){if(e.target===el)closeModal();return}
   switch(a){
     case "nav":go(el.getAttribute("data-v"));break;
