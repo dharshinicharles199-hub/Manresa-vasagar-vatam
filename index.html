@@ -639,7 +639,7 @@ function recRows(list){
     ];
   });
 }
-
+  async function saveFile(name,data){
   var dl=null;try{dl=(window.claude&&window.claude.use)?await window.claude.use("downloads"):null}catch(e){}
   if(dl){try{await dl.save({filename:name,data:data});toast("File saved: "+name);return}catch(e){var c=e&&e.code;if(c==="declined")return;if(c==="rate_limited"){toast("Please wait a moment and try again.","bad");return}}}
   try{await navigator.clipboard.writeText(data);toast("Downloads are not available here. The data was copied to your clipboard. Paste it into a text file.")}catch(e){toast("Downloads are not available in this view.","bad")}
