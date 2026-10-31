@@ -518,7 +518,23 @@ function vDashboard(){
   return h;
 }
 function vRegister(){return head("Register Members","Add each member once. Their Member ID is made automatically.")+'<div class="card">'+memberForm(null,"rm-")+'</div>'}
-function vMembers(){
+  function membersTable(list){
+  if(!list.length){
+    return '<div class="card empty">No matching members found.</div>';
+  }
+
+  return '<div class="tbl-wrap"><table class="tbl">'+
+    '<thead><tr><th>Member ID</th><th>Member Name</th></tr></thead>'+
+    '<tbody>'+
+    list.map(function(m){
+      return '<tr>'+
+        '<td>'+esc(m.id)+'</td>'+
+        '<td><b>'+esc(m.name)+'</b></td>'+
+        '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
+  function vMembers(){
   var q=S.mq.trim().toLowerCase(),qd=digits(S.mq);
   var list=S.members.filter(function(m){return !q||has(m.name,q)||has(m.id,q)||(qd&&digits(m.phone).indexOf(qd)>-1)}).sort(function(a,b){return a.name.localeCompare(b.name)});
   return head(
