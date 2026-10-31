@@ -536,17 +536,53 @@ function histList(){
 }
 function vHistory(){
   var list=histList(),m=S.hm?member(S.hm):null;
-  var h=head("Book Borrowing History","Pick a member, or search by member name, phone number or book name. Old records are never removed when a book is returned.");
-  h+='<div class="card"><div class="filters"><div class="wide field"><label for="hq">Search</label><input id="hq" data-bind="hq" type="search" autocomplete="off" placeholder="Member name, phone number or book name" value="'+esc(S.hq)+'"></div>'+
-   '<div class="field"><label for="hm">Member</label><select id="hm" data-bind="hm"><option value="">All members</option>'+S.members.slice().sort(function(a,b){return a.name.localeCompare(b.name)}).map(function(x){return '<option value="'+esc(x.id)+'"'+(S.hm===x.id?" selected":"")+'>'+esc(x.name)+'</option>'}).join('')+'</select></div>'+
-   '<div class="field"><label for="hs">Show</label><select id="hs" data-bind="hs">'+[["all","All books"],["Borrowed","Currently borrowed"],["Returned","Returned"],["Overdue","Overdue"]].map(function(o){return '<option value="'+o[0]+'"'+(S.hs===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join('')+'</select></div></div></div>';
-  if(m){var c=counts(memberRecords(m.id));
-    h+='<div class="card person"><div><h3>'+esc(m.name)+'</h3><div class="muted">Phone: <b class="mono" style="color:var(--ink)">'+esc(m.phone)+'</b> · '+esc(m.id)+'</div></div><div class="row"><span class="badge b-borrowed">'+(c.Borrowed+c.Overdue)+' not returned</span><span class="badge b-returned">'+c.Returned+' returned</span>'+(c.Overdue?'<span class="badge b-overdue">'+c.Overdue+' overdue</span>':'')+(S.admin ? '<button class="btn sm primary" data-act="addFor" data-id="'+esc(m.id)+'">'+ic("plus")+'Add Book</button>' : '')
+
+  var h=head(
+    "Book Borrowing History",
+    "Pick a member, or search by member name or book name. Old records are never removed when a book is returned."
+  );
+
+  h+='<div class="card"><div class="filters">'+
+    '<div class="wide field"><label for="hq">Search</label>'+
+    '<input id="hq" data-bind="hq" type="search" autocomplete="off" placeholder="Member name or book name" value="'+esc(S.hq)+'"></div>'+
+    '<div class="field"><label for="hm">Member</label>'+
+    '<select id="hm" data-bind="hm"><option value="">All members</option>'+
+    S.members.slice().sort(function(a,b){
+      return a.name.localeCompare(b.name);
+    }).map(function(x){
+      return '<option value="'+esc(x.id)+'"'+
+        (S.hm===x.id?" selected":"")+'>'+esc(x.name)+'</option>';
+    }).join('')+
+    '</select></div>'+
+    '<div class="field"><label for="hs">Show</label>'+
+    '<select id="hs" data-bind="hs">'+
+    [["all","All books"],["Borrowed","Currently borrowed"],["Returned","Returned"],["Overdue","Overdue"]].map(function(o){
+      return '<option value="'+o[0]+'"'+
+        (S.hs===o[0]?" selected":"")+'>'+o[1]+'</option>';
+    }).join('')+
+    '</select></div></div></div>';
+
+  if(m){
+    var c=counts(memberRecords(m.id));
+
+    h+='<div class="card person"><div><h3>'+esc(m.name)+'</h3>'+
+      '<div class="muted">Member ID: <b>'+esc(m.id)+'</b></div></div>'+
+      '<div class="row">'+
+      '<span class="badge b-borrowed">'+(c.Borrowed+c.Overdue)+' not returned</span>'+
+      '<span class="badge b-returned">'+c.Returned+' returned</span>'+
+      (c.Overdue?'<span class="badge b-overdue">'+c.Overdue+' overdue</span>':'')+
+      (S.admin?'<button class="btn sm primary" data-act="addFor" data-id="'+esc(m.id)+'">'+ic("plus")+'Add Book</button>':'')+
+      '</div></div>';
   }
-  h+='<p class="muted">'+list.length+' record'+(list.length===1?"":"s")+'</p>'+(S.records.length?recTable(list,{noMember:!!m}):'<div class="card empty"><h3>No borrowing records yet</h3><p>Use Add Borrowing Record to save the first one.</p></div>');
+
+  h+='<p class="muted">'+list.length+' record'+
+    (list.length===1?"":"s")+'</p>'+
+    (S.records.length?recTable(list,{noMember:!!m}):
+    '<div class="card empty"><h3>No borrowing records yet</h3>'+
+    '<p>Use Add Borrowing Record to save the first one.</p></div>');
+
   return h;
-}
-function vReturn(){
+}function vReturn(){
   var q=S.rq.trim().toLowerCase(),qd=digits(S.rq);
   var list=sortRecs(S.records.filter(function(r){if(status(r)==="Returned")return false;var m=member(r.memberId)||{};return !q||has(m.name,q)||has(r.book,q)||(qd&&digits(m.phone).indexOf(qd)>-1)}));
   list.sort(function(a,b){return (status(a)==="Overdue"?0:1)-(status(b)==="Overdue"?0:1)});
