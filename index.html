@@ -502,7 +502,7 @@ function recTable(list,o){
    }).join('')+'</tbody></table></div>';
 }
 
-membersTable
+
 function stat(cls,label,num){return '<div class="stat '+cls+'"><span class="label">'+label+'</span><span class="num">'+num+'</span></div>'}
 function head(t,p,extra){return '<div class="page-head"><div><h2>'+t+'</h2><div class="rule"></div>'+(p?'<p>'+p+'</p>':'')+'</div>'+(extra||"")+'</div>'}
 function searchBox(id,bind,val,ph){return '<div class="card"><div class="field"><label for="'+id+'">Search</label><input id="'+id+'" data-bind="'+bind+'" type="search" autocomplete="off" placeholder="'+ph+'" value="'+esc(val)+'"></div></div>'}
