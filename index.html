@@ -534,6 +534,33 @@ function vRegister(){return head("Register Members","Add each member once. Their
     }).join('')+
     '</tbody></table></div>';
 }
+  function membersTable(list){
+  if(!list.length){
+    return '<div class="card empty">No matching members found.</div>';
+  }
+
+  return '<div class="tbl-wrap"><table class="tbl">'+
+    '<thead>'+
+    '<tr><th>Member ID</th><th>Member Name</th><th>Actions</th></tr>'+
+    '</thead>'+
+    '<tbody>'+
+    list.map(function(m){
+      return '<tr>'+
+        '<td>'+esc(m.id)+'</td>'+
+        '<td>'+
+          '<button class="btn sm" data-act="history" data-id="'+esc(m.id)+'">'+
+          esc(m.name)+'</button>'+
+        '</td>'+
+        '<td>'+
+          (S.admin
+            ? '<button class="btn sm" data-act="editMember" data-id="'+esc(m.id)+'">Edit</button> '+
+              '<button class="btn sm danger" data-act="delMember" data-id="'+esc(m.id)+'">Delete</button>'
+            : '')+
+        '</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
   function vMembers(){
   var q=S.mq.trim().toLowerCase(),qd=digits(S.mq);
   var list=S.members.filter(function(m){return !q||has(m.name,q)||has(m.id,q)||(qd&&digits(m.phone).indexOf(qd)>-1)}).sort(function(a,b){return a.name.localeCompare(b.name)});
